@@ -190,6 +190,30 @@ class IssueTag(BaseModel):
     name: Optional[str]
 
 
+class IssueAttachment(BaseModel):
+    type: Literal["IssueAttachment"] = Field(alias="$type", default="IssueAttachment")
+    id: Optional[str]
+    name: Optional[str]
+    author: Optional[User]
+    created: Optional[datetime]
+    updated: Optional[datetime]
+    mime_type: Optional[str] = Field(alias="mimeType")
+    url: Optional[str]
+    base64_content: Optional[str] = Field(alias="base64Content")
+
+
+class IssueComment(BaseModel):
+    type: Literal["IssueComment"] = Field(alias="$type", default="IssueComment")
+    id: Optional[str]
+    text: Optional[str]
+    # text_preview: Optional[str] = Field(alias="textPreview")
+    created: Optional[datetime]
+    updated: Optional[datetime]
+    author: Optional[User]
+    attachments: Optional[Sequence[IssueAttachment]]
+    deleted: Optional[bool]
+
+
 class Issue(BaseModel):
     type: Literal["Issue"] = Field(alias="$type", default="Issue")
     id: Optional[str]
@@ -202,29 +226,8 @@ class Issue(BaseModel):
     updater: Optional[User]
     summary: Optional[str]
     description: Optional[str]
-    wikified_description: Optional[str] = Field(alias="wikifiedDescription")
+    # wikified_description: Optional[str] = Field(alias="wikifiedDescription")
     tags: Optional[Sequence[IssueTag]]
     custom_fields: Optional[Sequence[IssueCustomFieldType]] = Field(alias="customFields")
-
-
-class IssueAttachment(BaseModel):
-    type: Literal["IssueAttachment"] = Field(alias="$type", default="IssueAttachment")
-    id: Optional[str]
-    name: Optional[str]
-    author: Optional[User]
-    created: Optional[datetime]
-    updated: Optional[datetime]
-    mime_type: Optional[str] = Field(alias="mimeType")
-    url: Optional[str]
-
-
-class IssueComment(BaseModel):
-    type: Literal["IssueComment"] = Field(alias="$type", default="IssueComment")
-    id: Optional[str]
-    text: Optional[str]
-    text_preview: Optional[str] = Field(alias="textPreview")
-    created: Optional[datetime]
-    updated: Optional[datetime]
-    author: Optional[User]
     attachments: Optional[Sequence[IssueAttachment]]
-    deleted: Optional[bool]
+    comments: Optional[Sequence[IssueComment]]

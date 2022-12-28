@@ -46,15 +46,15 @@ class Client:
         *,
         method: str,
         path: str,
-        fields: Optional[str] = None,
-        offset: Optional[int] = None,
-        count: Optional[int] = None,
+        params: Optional[dict] = None,
         data: Optional[BaseModel] = None,
         files: Optional[dict[str, IO]] = None,
     ) -> Optional[dict]:
         response = self._session.request(
             method=method,
-            url=self._build_url(path=path, fields=fields, offset=offset, count=count),
+            url=f"{self._base_url}/api{path}",
+            params=params,
+            # url=self._build_url(path=path, fields=fields, offset=offset, count=count),
             data=data and obj_to_json(data),
             files=files,
             headers=data and {"Content-Type": "application/json"},
@@ -89,15 +89,23 @@ class Client:
         *,
         path: str,
         fields: Optional[str] = None,
+        query: Optional[str] = None,
         offset: Optional[int] = None,
         count: Optional[int] = None,
     ) -> Optional[dict]:
         return self._send_request(
             method="GET",
             path=path,
-            fields=fields,
-            offset=offset,
-            count=count,
+            params={
+                key: value
+                for key, value in {
+                    "fields": fields,
+                    "query": query,
+                    "$skip": offset,
+                    "$top": count,
+                }.items()
+                if value is not None
+            },
         )
 
     def _post(
@@ -113,9 +121,15 @@ class Client:
         return self._send_request(
             method="POST",
             path=path,
-            fields=fields,
-            offset=offset,
-            count=count,
+            params={
+                key: value
+                for key, value in {
+                    "fields": fields,
+                    "$skip": offset,
+                    "$top": count,
+                }.items()
+                if value is not None
+            },
             data=data,
             files=files,
         )
@@ -123,17 +137,35 @@ class Client:
     def _delete(self, *, path: str) -> Optional[dict]:
         return self._send_request(method="DELETE", path=path)
 
-    def get_issue(self, *, issue_id: str) -> Issue:
+    def get_issues(self, *, query: str, offset: int = 0, count: int = -1, raw: bool = False) -> Sequence[Issue]|dict:
+        """Query for issues
+
+        https://www.jetbrains.com/help/youtrack/devportal/operations-api-issues.html#get-Issue-method
+        """
+        result = self._get(
+            path="/issues",
+            query=query,
+            fields=model_to_field_names(Issue),
+        )
+        if raw:
+            return result
+        return parse_obj_as(
+            tuple[Issue, ...],
+            result,
+        )
+
+    def get_issue(self, *, issue_id: str, raw: bool = False) -> Issue:
         """Read an issue with specific ID.
 
         https://www.jetbrains.com/help/youtrack/devportal/operations-api-issues.html#get-Issue-method
         """
-        return Issue.parse_obj(
-            self._get(
-                path=f"/issues/{issue_id}",
-                fields=model_to_field_names(Issue),
-            ),
+        result = self._get(
+            path=f"/issues/{issue_id}",
+            fields=model_to_field_names(Issue),
         )
+        if raw:
+            return result
+        return Issue.parse_obj(result)
 
     def create_issue(self, *, issue: Issue) -> Issue:
         """Create new issue.
